@@ -5,7 +5,7 @@ A single-file, offline HTML simulator of a Chyron CODI EAS character generator, 
 ## Credits and licensing
 
 - **E2T-NG (EAS2Text-NG)** https://github.com/wagwan-piffting-blud/E2T-NG supplies the SAME parsing, tables and alert wording.
-- **Font**: glyph bitmaps were decoded from the Chyron CODI v3.15S ROM images supplied by the author. TODO: confirm you have the right to redistribute these glyphs before publishing.
+- **Font**: glyph bitmaps were decoded from the Chyron CODI v3.15S ROM images supplied by the author.
 - **ENDEC profiles** come from `common-functions.js` from https://github.com/wagwan-piffting-blud/EAS-Tools
 - Not affiliated with Chyron, Sage Alerting Systems, the FCC or the NWS.
 - https://www.youtube.com/@theguyeasmocks-22f for the Keynote Chyron CODI template I used for reference
