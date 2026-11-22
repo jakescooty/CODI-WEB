@@ -1,2 +1,18 @@
-# CODI-WEB
-A simulator for the Chyron CODI CGEN
+# CODI EAS CG Simulator
+
+A single-file, offline HTML simulator of a Chyron CODI EAS character generator, paired with a SAGE-style digital ENDEC that can encode, play and decode real SAME (EAS) signalling. Built for EAS mock-ups and videos.
+
+## Credits and licensing
+
+- **E2T-NG (EAS2Text-NG)** https://github.com/wagwan-piffting-blud/E2T-NG supplies the SAME parsing, tables and alert wording.
+- **Font**: glyph bitmaps were decoded from the Chyron CODI v3.15S ROM images supplied by the author. TODO: confirm you have the right to redistribute these glyphs before publishing.
+- **ENDEC profiles** come from `common-functions.js` from https://github.com/wagwan-piffting-blud/EAS-Tools
+- Not affiliated with Chyron, Sage Alerting Systems, the FCC or the NWS.
+- https://www.youtube.com/@theguyeasmocks-22f for the Keynote Chyron CODI template I used for reference
+- https://github.com/easyweb-project/easyweb for inspiration
+- Also made for https://www.youtube.com/@unixproto since their Chyron CODI broke
+- https://www.youtube.com/@xyzlojones & https://www.youtube.com/@gigabyte97-z9b for feedback before release
+
+## Changelog
+
+11-22-26: V1, Initial Release. 
