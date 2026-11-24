@@ -34,7 +34,7 @@ body{margin:0;font:14px/1.4 var(--sans);color:var(--ink);background:linear-gradi
 /* monitor */
 .bezel{background:#0c0e10;border-radius:8px;padding:14px 14px 8px;box-shadow:0 0 0 1px #000,0 10px 30px rgba(0,0,0,.5),inset 0 1px 0 #2c3137}
 .screen{position:relative;background:#000;border-radius:3px;overflow:hidden;box-shadow:0 0 0 2px #05070a}
-#cg{display:block;width:100%;height:auto;aspect-ratio:4/3;background:var(--blue)}
+#cg{display:block;width:100%;height:auto;aspect-ratio:4/3;background:transparent;margin-bottom:-1px}   /* no blue backing; 1px overlap so a fractional box can never leave a gap */
 .hud{position:absolute;left:8px;bottom:8px;display:flex;align-items:center;gap:7px;padding:3px 9px 3px 7px;border-radius:10px;background:rgba(0,0,0,.6);color:#e8ecef;font:12px var(--sans)}
 .dot{width:8px;height:8px;border-radius:50%;background:#6b747c}
 .hud.on .dot{background:var(--red);box-shadow:0 0 6px var(--red)}
@@ -124,7 +124,7 @@ legend{padding:0 6px;font-size:12px;color:var(--ink2)}legend small{color:#7a838c
 body.out{background:#000;overflow:hidden}body.out .top,body.out .right,body.out .transport,body.out .foot,body.out .bezel-foot,body.out .hud{display:none}
 body.out .app{display:block;padding:0;max-width:none}body.out .bezel{padding:0;border-radius:0;background:transparent;box-shadow:none}
 body.out .screen{border-radius:0;box-shadow:none;background:transparent;height:100vh;display:grid;place-items:center}
-body.out #cg{width:auto;height:auto;max-width:100vw;max-height:100vh}
+body.out #cg{width:auto;height:auto;max-width:100vw;max-height:100vh;margin:0}
 body.out.keyed,body.out.keyed .screen{background:transparent}
 @media (max-width:1000px){.app{grid-template-columns:1fr}.right{position:static}.grid3{grid-template-columns:1fr 1fr}.brand span{display:none}}
 @media (max-width:520px){.grid2,.grid3{grid-template-columns:1fr}.leds{gap:8px}}
@@ -135,6 +135,8 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
 @keyframes recpulse{50%{box-shadow:0 0 0 3px rgba(224,55,44,.35)}}
 .recrow{align-items:center;gap:6px 14px}.recrow .note{margin:0;flex:1;min-width:180px}.chk{display:flex;gap:6px;align-items:center;font-size:13px}
 .note.bad,.recrow .note.bad{color:#b3261e}
+
+.checks.sub{margin:0 0 8px}.relayrow{align-items:center}.relayrow .note{margin:0;flex:1;min-width:180px}
 
 </style>
 </head>
@@ -166,7 +168,7 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
         <button id="btnBoot" type="button" title="Replays the power-on banner">Reboot CG</button>
         <button id="btnRec" type="button" class="rec" title="Record the CG output to a video file">● Record</button>
       </div>
-      <div class="row recrow"><label class="chk"><input id="chkRecAudio" type="checkbox" checked> Include ENDEC audio in the recording</label><span id="recInfo" class="note">Records the CG canvas as MP4. Start it, send an alert, then press Stop to save.</span></div>
+      <div class="row recrow"><label class="chk"><input id="chkRecAudio" type="checkbox" checked> Include audio (ENDEC and background video sound)</label><span id="recInfo" class="note">Records the CG canvas as MP4. Start it, send an alert, then press Stop to save.</span></div>
       <div class="row grow">
         <label class="fld grow"><span>Scroll text</span>
           <input id="crawlText" type="text" value="THIS IS A TEST OF THE CODI CHARACTER GENERATOR. NO ACTION IS REQUIRED." spellcheck="false"></label>
@@ -176,8 +178,8 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
   </section>
 
   <section class="right">
-    <div class="faceplate" aria-label="Digital/Analog ENDEC front panel">
-      <div class="fp-head"><b>Digital/Analog ENDEC</b><span>SAGE-style · simulator</span>
+    <div class="faceplate" aria-label="Digital ENDEC front panel">
+      <div class="fp-head"><b>Digital ENDEC</b><span>SAGE-style · simulator</span>
         <ul class="leds" aria-label="Status lights">
           <li><i id="ledPwr" class="led g on"></i>Power</li>
           <li><i id="ledCar" class="led a"></i>Carrier</li>
@@ -289,6 +291,18 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
           <div class="row"><button id="btnCancelDec" type="button" hidden>Stop playback</button></div>
           <div id="decStatus" class="msgs"></div>
         </fieldset>
+        <fieldset>
+          <legend>Relay</legend>
+          <p class="note first">Listen to a recording, a web audio stream or the microphone. When an alert arrives, it is re-sent by this ENDEC (your profile, attention signal and EOM). The input’s voice message, the part between its attention signal and its EOM, becomes the audio message of the new alert.</p>
+          <div class="grid2">
+            <label class="fld"><span>Listen to</span><select id="relaySrc"><option value="file">Audio file</option><option value="url">Web audio stream (URL)</option><option value="mic">Microphone</option><option value="tab">Browser tab audio</option></select></label>
+            <label class="fld" id="relayFileWrap"><span>File</span><span class="filebtn"><input id="relayFile" type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.flac,.aac"><span id="relayFileName">Choose audio file…</span></span></label>
+            <label class="fld" id="relayUrlWrap" hidden><span>Stream address</span><input id="relayUrl" type="text" placeholder="https://example.com/stream.mp3" spellcheck="false"></label>
+          </div>
+          <div class="checks sub"><label><input id="relayOwnId" type="checkbox" checked> Send it under my station ID (Encode tab)</label></div>
+          <div class="row relayrow"><button id="btnRelay" type="button" class="primary">Relay</button><span id="relayInfo" class="note">Choose a source, then press Relay.</span></div>
+        </fieldset>
+
       </div>
 
       <!-- LOG -->
@@ -321,6 +335,7 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
         <div id="bgMediaRow">
           <div class="row">
             <label class="filebtn"><input id="bgFile" type="file" accept="image/*,video/*,.mkv,.mov,.m4v,.avif,.jfif"><span>Choose image or video…</span></label>
+            <label class="fld"><span>Video volume</span><input id="bgVol" type="range" min="0" max="100" step="5" value="100"></label>
             <label class="fld"><span>Fit</span><select id="bgFit"><option value="cover">Fill (crop)</option><option value="contain">Fit (letterbox)</option><option value="stretch">Stretch</option></select></label>
             <button id="btnBgClear" type="button" hidden>Use solid color</button>
           </div>
@@ -1743,7 +1758,7 @@ const SAME = (() => {
    *   [relay pop] preTone gap | header bursts (between gaps) | after gap | attention signal | preMessage gap | message |
    *   eomLead gap | EOM bursts (between gaps) | eomTail gap [relay pop]
    * The profile's own sampleRate is never used: audio is always generated at fs.
-   * o: {profile, tone:'eas'|'nwr'|'none', toneSec, messageSec, eom, amp, corrupt:[bool..], rnd}
+   * o: {profile, tone:'eas'|'nwr'|'none', toneSec, messageSec, messageAudio (Float32Array, replaces the silent message), eom, amp, corrupt:[bool..], rnd}
    */
   function buildTransmission(header, fs, o) {
     o = Object.assign({ profile: null, tone: 'eas', toneSec: 8, messageSec: 5, eom: true, amp: 0.8, corrupt: [], rnd: Math.random }, o || {});
@@ -1762,9 +1777,9 @@ const SAME = (() => {
       add('tone', o.tone === 'nwr' ? '1050 Hz tone' : 'attention signal 853+960 Hz',
         tone(o.tone === 'nwr' ? [1050] : [853, 960], o.toneSec, fs, o.amp * 0.9));
     }
-    if (o.messageSec > 0) {
+    if (o.messageAudio ? o.messageAudio.length > 0 : o.messageSec > 0) {
       add('gap', 'gap', silence(ms(P.preMessageGapMs), fs));
-      add('msg', 'audio message', silence(o.messageSec, fs));
+      add('msg', o.messageAudio ? 'relayed audio message' : 'audio message', o.messageAudio || silence(o.messageSec, fs));
     }
     if (o.eom) {
       add('gap', 'gap', silence(ms(P.eomLeadGapMs), fs));
@@ -1775,7 +1790,7 @@ const SAME = (() => {
       add('gap', 'tail', silence(ms(P.eomTailGapMs), fs));
     } else add('gap', 'tail', silence(ms(P.eomTailGapMs), fs));
     if (P.relayPop) add('pop', 'relay pop', relayPop(fs, 0.5));
-    return { samples: concat(parts), fs, timeline, duration: t };
+    return { samples: concat(parts), fs, timeline, duration: t, hasMessageAudio: !!(o.messageAudio && o.messageAudio.length) };
   }
 
   /* ------------------------------------------------------------- channel */
@@ -1954,6 +1969,100 @@ const SAME = (() => {
     }
   }
 
+
+  /* ---------------------------------------------------------------- relay */
+  /* Listen to any audio, find a SAME alert, capture the voice message that sits between the attention signal and the EOM. */
+  function goertzel2(x, off, n, f, fs) {
+    const w = 2 * Math.PI * f / fs, c = 2 * Math.cos(w); let s1 = 0, s2 = 0;
+    for (let i = 0; i < n; i++) { const v = x[off + i] + c * s1 - s2; s2 = s1; s1 = v; }
+    return s1 * s1 + s2 * s2 - c * s1 * s2;
+  }
+  /** first run (>= 0.5 s) of the 853 + 960 Hz attention signal; returns {start,end} in seconds or null */
+  function findAttentionTone(x, fs, strict) {
+    const N = Math.round(0.05 * fs), hops = Math.floor(Math.min(x.length, 45 * fs) / N), flag = new Uint8Array(hops);
+    for (let k = 0; k < hops; k++) {
+      const o = k * N; let e = 0; for (let i = 0; i < N; i++) e += x[o + i] * x[o + i];
+      if (e < N * 1e-6) continue;
+      const m1 = goertzel2(x, o, N, 853, fs), m2 = goertzel2(x, o, N, 960, fs), ne = N * e;
+      flag[k] = (m1 + m2 > (strict ? 0.2 : 0.08) * ne && Math.min(m1, m2) > (strict ? 0.05 : 0.02) * ne) ? 1 : 0;
+    }
+    let start = -1, last = -1, gap = 0;
+    for (let k = 0; k < hops; k++) {
+      if (flag[k]) { if (start < 0) start = k; last = k; gap = 0; }
+      else if (start >= 0 && ++gap > 1) { if (last - start + 1 >= 10) return { start: start * 0.05, end: (last + 1) * 0.05 }; start = -1; gap = 0; }
+    }
+    return start >= 0 && last - start + 1 >= 10 ? { start: start * 0.05, end: (last + 1) * 0.05 } : null;
+  }
+  /** start (s) of the first run (>= 0.15 s) of SAME data bursts: both AFSK tones, 1562.5 and 2083.3 Hz, strongly present */
+  function findFskStart(x, fs) {
+    const N = Math.round(0.05 * fs), hops = Math.floor(x.length / N); let run = 0;
+    for (let k = 0; k < hops; k++) {
+      const o = k * N; let e = 0; for (let i = 0; i < N; i++) e += x[o + i] * x[o + i];
+      let hit = false;
+      if (e >= N * 1e-5) { const m1 = goertzel2(x, o, N, SPACE, fs), m2 = goertzel2(x, o, N, MARK, fs), ne = N * e; hit = m1 + m2 > 0.28 * ne && Math.min(m1, m2) > 0.07 * ne; }
+      if (hit) { if (++run >= 3) return (k - run + 1) * 0.05; } else run = 0;
+    }
+    return null;
+  }
+  /** seg = audio from the end of the header bursts to the start of the EOM. Returns the voice message only. */
+  function extractMessage(seg, fs) {
+    const tone = findAttentionTone(seg, fs, true) || findAttentionTone(seg, fs, false);
+    const from = tone ? Math.round((tone.end + 0.03) * fs) : Math.min(seg.length, Math.round(1.0 * fs));
+    let m = seg.subarray(Math.min(from, seg.length));
+    const fsk = findFskStart(m, fs);                       // the EOM (or any SAME burst) ends the message, whatever the ENDEC's framing
+    if (fsk != null) m = m.subarray(0, Math.max(0, Math.round((fsk - 0.02) * fs)));
+    const F = Math.round(0.02 * fs), nf = Math.floor(m.length / F), rms = new Float32Array(nf); let peakRms = 0;
+    for (let k = 0; k < nf; k++) { let e = 0; for (let i = 0; i < F; i++) { const v = m[k * F + i]; e += v * v; } rms[k] = Math.sqrt(e / F); if (rms[k] > peakRms) peakRms = rms[k]; }
+    const info = { toneFound: !!tone, toneEnd: tone ? tone.end : null };
+    if (nf < 5 || peakRms < 0.002) return { samples: new Float32Array(0), info: Object.assign(info, { seconds: 0 }) };
+    const sorted = Float32Array.from(rms).sort(), floor = sorted[Math.floor(nf * 0.1)];       // quietest 10 % of frames ~ the noise floor
+    const thr = Math.max(0.002, 0.04 * peakRms, 3 * floor); let a = 0, b = nf - 1;
+    while (a < nf && rms[a] < thr) a++; while (b > a && rms[b] < thr) b--;
+    const keep = Math.round(0.15 * fs), i0 = Math.max(0, a * F - keep), i1 = Math.min(m.length, (b + 1) * F + keep);
+    let out = Float32Array.from(m.subarray(i0, Math.min(i1, i0 + Math.round(120 * fs))));     // messages are capped at 2 minutes
+    let pk = 0; for (let i = 0; i < out.length; i++) if (Math.abs(out[i]) > pk) pk = Math.abs(out[i]);
+    const g = pk > 0 ? Math.min(6, 0.8 / pk) : 1; for (let i = 0; i < out.length; i++) out[i] *= g;
+    info.seconds = out.length / fs; return { samples: out, info };
+  }
+  const EOM_BURST_SEC = (16 + 4) * 8 / BAUD;
+
+  /**
+   * Streaming relay listener. hooks: {ignore():bool, level(rms), carrier(on), alert(headerEvent), ready({header,votes,message,info}), fail(text)}
+   * Feed it audio with feed(Float32Array); call flush() when the input ends.
+   */
+  class RelaySession {
+    constructor(fs, hooks) {
+      this.fs = fs; this.h = Object.assign({ ignore: () => false, level() { }, carrier() { }, alert() { }, ready() { }, fail() { } }, hooks || {});
+      this.state = 'idle'; this.chunks = []; this.total = 0; this.base = 0; this.lastHdrEnd = 0; this.alert = null; this.nBefore = 0;
+      this.dec = new Decoder(fs, e => this.onEvent(e));
+    }
+    feed(x) {
+      const c = Float32Array.from(x); this.nBefore = this.dec.n; this.dec.process(c);
+      if (this.state === 'collect') { this.chunks.push(c); this.total += c.length; if (this.total > 200 * this.fs) this.finish(this.dec.n / this.fs); }   // no EOM within ~3 min: relay what we have
+    }
+    flush() { this.dec.flush(); if (this.state === 'collect') this.finish(this.dec.n / this.fs); }
+    onEvent(e) {
+      if (e.type === 'level') { this.h.level(e.rms); return; }
+      if (e.type === 'carrier') { this.h.carrier(e.on); return; }
+      if (this.h.ignore()) { this.state = 'idle'; return; }          // our own output: never relay it
+      switch (e.type) {
+        case 'burst': if (this.state === 'collect') this.lastHdrEnd = Math.max(this.lastHdrEnd, e.t); break;
+        case 'header':
+          this.alert = e; this.state = 'collect'; this.base = this.nBefore; this.chunks = []; this.total = 0; this.lastHdrEnd = e.t;
+          this.h.alert(e); break;
+        case 'eom': if (this.state === 'collect') this.finish(e.t - EOM_BURST_SEC - 0.25); break;   // back off: some ENDECs add bytes ahead of the EOM preamble
+        case 'fail': this.h.fail('A header was heard but could not be decoded.'); break;
+      }
+    }
+    finish(endSec) {
+      const fs = this.fs, all = concat(this.chunks), t0 = this.base / fs, alert = this.alert;
+      const a = Math.max(0, Math.round((this.lastHdrEnd - t0) * fs)), b = Math.min(all.length, Math.round((endSec - t0) * fs));
+      const msg = extractMessage(all.subarray(a, Math.max(a, b)), fs);
+      this.state = 'idle'; this.chunks = []; this.total = 0; this.alert = null;
+      this.h.ready({ header: alert.text, votes: alert.votes, message: msg.samples, info: msg.info, fs });
+    }
+  }
+
   /** Decode a whole buffer, returns the events. */
   function decodeBuffer(x, fs, onProgress) {
     const ev = [], d = new Decoder(fs, e => { if (e.type !== 'level') ev.push(e); });
@@ -1963,7 +2072,7 @@ const SAME = (() => {
   }
 
   return { BAUD, MARK, SPACE, RE_HEADER, buildHeader, isValidHeader, splitHeader, toJJJHHMM, fromJJJHHMM, dayOfYearUTC,
-    afsk, burstBytes, tone, relayPop, buildTransmission, addNoise, wavEncode, Decoder, decodeBuffer, concat, silence };
+    afsk, burstBytes, tone, relayPop, buildTransmission, RelaySession, extractMessage, findAttentionTone, addNoise, wavEncode, Decoder, decodeBuffer, concat, silence };
 })();
 
 
@@ -2267,7 +2376,7 @@ const DEFAULTS = {
   barY: 0.11863, barH: 0.09231, shadow: true, idle: false, smooth: true,
   preset: 'tpl', org: 'WXR', evt: 'SVR', locs: ['050015'], dur: '0051', sid: 'TWC/NWS ', issueMode: 'now', issueFixed: '',
   endec: 'SAGE_ANALOG_1822', toneSel: 'eas', toneSec: 8, msgSec: 4, noise: '0', corrupt: '', vol: 35, rt: true, sound: true, tts: false, eom: true,
-  baud: '9600', serIn: true, serOut: true, recAudio: true, crawlText: 'THIS IS A TEST OF THE CODI CHARACTER GENERATOR. NO ACTION IS REQUIRED.'
+  baud: '9600', serIn: true, serOut: true, recAudio: true, relayOwnId: true, bgVol: 100, crawlText: 'THIS IS A TEST OF THE CODI CHARACTER GENERATOR. NO ACTION IS REQUIRED.'
 };
 const CG_KEYS = ['res', 'bg', 'bgCustom', 'bgKind', 'bgFit', 'bar', 'font', 'scale', 'speed', 'hold', 'repeats', 'barY', 'barH', 'shadow', 'idle', 'smooth'];
 const S = Object.assign({}, DEFAULTS);
@@ -2276,6 +2385,7 @@ if (!Array.isArray(S.locs)) S.locs = DEFAULTS.locs.slice();
 S.bgKind = 'color';                                   // background files are not stored between sessions
 if (!S.resMigrated) { if (S.res === '720x480|4:3') S.res = DEFAULTS.res; S.resMigrated = true; try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { } }   // once only: old default size -> new high-quality 4:3 default
 if (S.textMode === 'CODI') S.textMode = 'SAGE';        // the old template-wording option no longer exists
+if (!S.endecMigrated) { if (S.endec === 'SAGE_DIGITAL_3644') S.endec = DEFAULTS.endec; S.endecMigrated = true; try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { } }   // once: old default -> new default
 if (!ENDEC_PROFILES[S.endec]) S.endec = DEFAULTS.endec;
 const save = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { } };
 
@@ -2349,6 +2459,7 @@ function applyBackground(kind, blob) {
   if (key === bgKey) return; bgKey = key;                     // same file again (pop-out re-sync): leave the playing element alone
   clearTimeout(bgTimer); const old = bgUrl; bgUrl = null; if (old) setTimeout(() => URL.revokeObjectURL(old), 3000);
   if (bgNode) { try { bgNode.pause && bgNode.pause(); bgNode.remove(); } catch (e) { } bgNode = null; }
+  if (bgAudio) { try { bgAudio.gain.disconnect(); bgAudio.src.disconnect(); } catch (e) { } bgAudio = null; }
   if (key === 'color') { cg.setBackground(null); return; }
   bgUrl = URL.createObjectURL(blob); const name = blob.name || kind;
   if (kind === 'image') {
@@ -2356,16 +2467,41 @@ function applyBackground(kind, blob) {
     el.onerror = () => bgStatus('This browser could not read that image.', true); el.src = bgUrl; cg.setBackground(el);
   } else {
     const el = document.createElement('video');
-    el.muted = true; el.defaultMuted = true; el.setAttribute('muted', ''); el.setAttribute('playsinline', ''); el.loop = true; el.preload = 'auto';
+    el.muted = OUT; el.defaultMuted = OUT; if (OUT) el.setAttribute('muted', ''); el.setAttribute('playsinline', ''); el.loop = true; el.preload = 'auto';   // only the controller plays the sound (the pop-out stays silent so it is not doubled)
     el.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
     document.body.appendChild(el); bgNode = el;                 // attached (hidden) so every browser keeps decoding frames
-    const go = () => { const p = el.play(); if (p && p.catch) p.catch(() => { }); };
-    el.onloadeddata = () => { go(); bgStatus('Showing video: ' + name + ' (' + el.videoWidth + ' × ' + el.videoHeight + ', ' + Math.round(el.duration) + ' s, muted, looping)'); };
+    if (!OUT) attachVideoAudio(el);
+    const go = () => {
+      const p = el.play();
+      if (p && p.catch) p.catch(err => {                          // sound blocked by the browser's autoplay rules: show picture now, enable sound on first click
+        // any other failure (bad codec...) is reported by onerror, not treated as blocked sound
+        if (OUT || el.muted || el.error || !err || err.name !== 'NotAllowedError') return; el.muted = true; el.play().catch(() => { });
+        bgStatus('The browser blocked video sound. Click anywhere on the page to turn it on.', true);
+        document.addEventListener('pointerdown', () => { try { getCtx(); el.muted = false; el.play().catch(() => { }); bgStatus('Showing video: ' + name + ' with sound.'); } catch (e) { } }, { once: true });
+      });
+    };
+    el.onloadeddata = () => { go(); bgStatus('Showing video: ' + name + ' (' + el.videoWidth + ' × ' + el.videoHeight + ', ' + Math.round(el.duration) + ' s, looping, sound ' + (OUT ? 'off in this window' : el.muted ? 'waiting for a click, the browser blocked it' : S.bgVol + '%') + ')'); };
     el.oncanplay = go;
     el.onerror = () => bgStatus('This browser cannot play that video (unsupported format or codec). H.264 MP4 or WebM work everywhere.', true);
     el.src = bgUrl; go(); cg.setBackground(el);
     bgTimer = setTimeout(() => { if (bgNode === el && el.readyState < 2) bgStatus('No picture yet after 5 s. The video may use a codec this browser cannot decode (HEVC/H.265 phone clips, some .mov or .mkv files); re-export as H.264 MP4 or WebM.', true); }, 5000);
   }
+}
+/** route the video's own sound through Web Audio so it has a volume control and can be recorded with the CG */
+/** The background video's sound is cut for the whole EAS alert: from the start of a transmission (lead-in, before the SAME) or the moment an alert arrives, until the transmission or EOM is over. */
+const MUTE = { tx: false, alert: false };
+function programGain() { return (MUTE.tx || MUTE.alert) ? 0 : S.bgVol / 100; }
+function applyProgramMute() {
+  const g = programGain();
+  try { if (bgAudio) bgAudio.gain.gain.setTargetAtTime(g, getCtx().currentTime, 0.02); else if (bgNode) bgNode.volume = g; } catch (e) { }
+}
+let bgAudio = null;
+function attachVideoAudio(el) {
+  try {
+    const c = getCtx(), src = c.createMediaElementSource(el), gain = c.createGain();
+    gain.gain.value = programGain(); src.connect(gain); gain.connect(c.destination); if (REC && REC.dest) gain.connect(REC.dest);
+    bgAudio = { src, gain };
+  } catch (e) { el.volume = programGain(); }
 }
 function importBackground(f) {
   const kind = mediaKind(f);
@@ -2422,7 +2558,7 @@ function onAlert(header, src, extra) {
   entry.early = !!extra.early;
   if (extra.replace && LAST && LAST.early && LOG.indexOf(LAST) >= 0) { Object.assign(LAST, entry, { early: false }); renderLog(); }   // vote corrected the first-tone text: same log entry
   else { LAST = entry; addLog(entry); }
-  alertActive = true; led('Alert', true); led('Eom', false);
+  alertActive = true; MUTE.alert = true; applyProgramMute(); led('Alert', true); led('Eom', false);
   lcd('ALERT: ' + LAST.event, text);
   serialOut(text);
   consoleLine('ENDEC > CG', text);
@@ -2434,6 +2570,7 @@ function showEntry(entry, interrupt, live) {
   cgCmd({ cmd: 'show', text: entry.text, o: { repeats: live && entry.header ? 0 : +S.repeats, bar: barFor(entry.header), label: entry.event, interrupt: !!interrupt || !S.queue } });
 }
 function onEom(src) {
+  setTimeout(() => { MUTE.alert = false; applyProgramMute(); }, 1200);
   flashLed('Eom', 1500); addLog({ kind: 'eom', ts: Date.now(), src, header: 'NNNN', text: 'End of message received' });
   cgCmd({ cmd: 'eom' });
   if (!S.auto) { alertActive = false; led('Alert', false); }
@@ -2446,7 +2583,7 @@ function renderLog() {
   const ul = $('logList'); if (!LOG.length) { ul.innerHTML = '<li class="empty">Nothing received yet. Send an alert or decode a header.</li>'; return; }
   ul.innerHTML = LOG.map((e, i) => {
     const t = new Date(e.ts).toLocaleTimeString();
-    const tag = e.kind === 'fail' ? '<span class="tag bad">error</span>' : e.kind === 'eom' ? '<span class="tag">EOM</span>' : '<span class="tag">' + esc(e.event || 'alert') + '</span>';
+    const tag = e.kind === 'fail' ? '<span class="tag bad">error</span>' : e.kind === 'relay' ? '<span class="tag">relay</span>' : e.kind === 'eom' ? '<span class="tag">EOM</span>' : '<span class="tag">' + esc(e.event || 'alert') + '</span>';
     const vote = e.votes ? ' · ' + e.votes + '/3 bursts' + (e.corrected ? ', repaired' : '') + (e.weak ? ', single burst' : '') : '';
     return '<li><div class="meta"><span>' + t + '</span>' + tag + '<span>' + esc(e.src || '') + esc(vote) + '</span></div>' + esc(e.text || '') +
       (e.header && e.kind === 'alert' ? '<code>' + esc(e.header) + '</code>' : '') +
@@ -2570,7 +2707,7 @@ function speak(text) {
 /* --------------------------------------------------------------- transmit */
 let TX = null;
 function cancelTx() {
-  EARLY = null; DEFER = false; PENDING = null; $('btnCancelDec').hidden = true;
+  EARLY = null; DEFER = false; PENDING = null; $('btnCancelDec').hidden = true; MUTE.tx = false; MUTE.alert = false; applyProgramMute();
   if (!TX) return; TX.timers.forEach(clearTimeout); try { TX.src && TX.src.stop(); } catch (e) { }
   try { speechSynthesis.cancel(); } catch (e) { }
   TX = null; led('Tx', false); led('Car', false); $('btnSend').disabled = false; $('vu').style.width = '0';
@@ -2595,8 +2732,8 @@ function runTx(tx, header) {
     acts.push({ t: seg.t, f: () => {
       if (seg.kind === 'tone' && PENDING) { showEntry(PENDING, false, true); PENDING = null; }
       led('Tx', seg.kind !== 'msg');
-      lcdStatus('TX  ' + seg.label, seg.kind === 'hdr' ? header : seg.kind === 'eom' ? 'NNNN' : seg.kind === 'msg' ? (S.tts ? '(speaking)' : '(silence)') : '');
-      if (seg.kind === 'msg' && S.tts && header !== 'NNNN') { try { speak(alertText(header)); } catch (e) { } }
+      lcdStatus('TX  ' + seg.label, seg.kind === 'hdr' ? header : seg.kind === 'eom' ? 'NNNN' : seg.kind === 'msg' ? (tx.hasMessageAudio ? '(relayed audio)' : S.tts ? '(speaking)' : '(silence)') : '');
+      if (seg.kind === 'msg' && S.tts && header !== 'NNNN' && !tx.hasMessageAudio) { try { speak(alertText(header)); } catch (e) { } }
     } });
     acts.push({ t: seg.t + seg.dur, f: () => led('Tx', false) });
   });
@@ -2609,11 +2746,12 @@ function playActs(acts, x, fs, duration, done) {
   acts.push({ t: duration + 0.25, f: () => {
     DEFER = false; if (PENDING) { showEntry(PENDING, false, true); PENDING = null; }
     if (alertActive && LAST && cg.job && cg.job.text === LAST.text) cgCmd({ cmd: 'eom' });   // transmission/recording over with no EOM: release the scroll
-    TX = null; $('btnSend').disabled = false; led('Tx', false); led('Car', false); $('vu').style.width = '0';
+    TX = null; MUTE.tx = false; applyProgramMute(); $('btnSend').disabled = false; led('Tx', false); led('Car', false); $('vu').style.width = '0';
+    RELAY.ignoreUntil = Date.now() + 4000; if (RELAY.q.length) setTimeout(relayPump, 400);
     if (done) done(); if (!alertActive) lcdIdleScreen();
   } });
   acts.sort((p, q) => p.t - q.t);
-  TX = { timers: [], src: null }; $('btnSend').disabled = !!S.rt;
+  TX = { timers: [], src: null }; $('btnSend').disabled = !!S.rt; MUTE.tx = true; applyProgramMute();
   if (S.rt) { if (S.sound || (REC && REC.dest)) { try { TX.src = playSamples(x, fs, !!S.sound); } catch (e) { } } acts.forEach(k => TX.timers.push(setTimeout(k.f, k.t * 1000))); }
   else acts.forEach(k => k.f());
 }
@@ -2707,6 +2845,86 @@ async function toggleMic() {
   } catch (e) { setDecStatus('<div class="e">Microphone unavailable: ' + esc(e.message || e) + '</div>'); }
 }
 
+
+/* ------------------------------------------------------------------- relay */
+/* Listen to a file / stream / microphone, find a SAME alert, then re-send it with our own encoder.
+   The input's voice message (between its attention signal and its EOM) becomes the audio message of the new alert. */
+const RELAY = { stop: null, q: [], file: null, ignoreUntil: 0 };
+function relayStatus(msg, bad) { const el = $('relayInfo'); el.textContent = msg; el.classList.toggle('bad', !!bad); }
+function relayHeader(h) {                                  // re-issue under our own station ID (Encode tab), everything else unchanged
+  if (!S.relayOwnId) return h;
+  const f = SAME.splitHeader(h); if (!f) return h;
+  const b = SAME.buildHeader({ org: f.org, event: f.event, locations: f.locations, duration: f.duration, issue: f.issue, sender: S.sid });
+  return b.errors.length ? h : b.header;
+}
+function relayHooks(live, st) {
+  return {
+    ignore: () => live && (!!TX || Date.now() < RELAY.ignoreUntil),           // never relay our own output
+    level: rms => { if (live) $('vu').style.width = Math.min(100, Math.sqrt(rms) * 160) + '%'; },
+    carrier: on => { if (live) led('Car', on); },
+    alert: e => { st.heard++; relayStatus('Alert heard: ' + eventName(e.text) + '. Capturing its audio message until the EOM…'); lcd('RELAY  RX  ' + eventName(e.text), e.text, false); },
+    fail: msg => relayStatus(msg, true),
+    ready: r => { st.relayed++; relayReady(r); }
+  };
+}
+function relayReady(r) {
+  const hdr = relayHeader(r.header), sec = r.message.length / r.fs;
+  relayStatus('Relaying ' + eventName(hdr) + ' with ' + (sec ? sec.toFixed(1) + ' s of the input’s audio message' : 'no audio message (none found between the tone and the EOM)') + (r.info.toneFound ? '' : '. The attention signal was not found, so the message start is a best guess') + '.');
+  addLog({ kind: 'relay', src: 'RELAY', header: hdr, text: 'Relay of ' + eventName(hdr) + ': ' + (sec ? sec.toFixed(1) + ' s message captured' : 'no message captured') });
+  RELAY.q.push({ hdr, message: r.message, fs: r.fs }); relayPump();
+}
+function relayPump() {
+  if (TX) return; const it = RELAY.q.shift(); if (!it) return;
+  const o = txOptions(); if (it.message.length) o.messageAudio = it.message;
+  runTx(SAME.buildTransmission(it.hdr, it.fs, o), it.hdr);                      // built at the input's own sample rate: no resampling
+}
+async function relayFromFile(file) {
+  try {
+    relayStatus('Reading ' + file.name + '…');
+    const buf = await getCtx().decodeAudioData(await file.arrayBuffer()), n = buf.length, ch = buf.numberOfChannels, sr = buf.sampleRate;
+    const mono = new Float32Array(n); for (let c = 0; c < ch; c++) { const d = buf.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[i] / ch; }
+    const st = { heard: 0, relayed: 0 }, sess = new SAME.RelaySession(sr, relayHooks(false, st)), CH = 65536;
+    for (let i = 0; i < n; i += CH) { sess.feed(mono.subarray(i, Math.min(n, i + CH))); if ((i / CH) % 6 === 0) { if (!st.relayed) relayStatus('Listening to ' + file.name + '… ' + Math.round(i / n * 100) + '%'); await new Promise(r => setTimeout(r)); } }
+    sess.flush();
+    if (!st.heard) { relayStatus('No SAME alert was found in ' + file.name + '.', true); lcdIdleScreen(); }
+  } catch (e) { relayStatus('Could not read that file as audio: ' + (e.message || e), true); }
+}
+async function relayLive(kind) {
+  const c = getCtx(); let stream = null, el = null, srcNode;
+  if (kind === 'mic') stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  else if (kind === 'tab') {
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    if (!stream.getAudioTracks().length) { stream.getTracks().forEach(t => t.stop()); throw new Error('No audio was shared. Choose a browser tab and tick “Share tab audio”.'); }
+    stream.getVideoTracks().forEach(t => t.stop());
+  }
+  if (stream) srcNode = c.createMediaStreamSource(stream);
+  else {
+    const url = $('relayUrl').value.trim(); if (!/^https?:\/\//i.test(url)) throw new Error('Enter a stream address that starts with http:// or https://');
+    el = new Audio(); el.crossOrigin = 'anonymous'; el.src = url;
+    el.onerror = () => relayStatus('The stream could not be opened (wrong address, or the server refuses it).', true);
+    await el.play(); srcNode = c.createMediaElementSource(el);
+  }
+  const st = { heard: 0, relayed: 0 }, sess = new SAME.RelaySession(c.sampleRate, relayHooks(true, st)), proc = c.createScriptProcessor(4096, 1, 1); let sound = false;
+  proc.onaudioprocess = ev => { const d = ev.inputBuffer.getChannelData(0); if (!sound) for (let i = 0; i < d.length; i += 16) if (d[i]) { sound = true; break; } sess.feed(d); };
+  srcNode.connect(proc); proc.connect(c.destination);                          // the processor writes no output: nothing is heard from the input
+  const watch = (kind !== 'mic') ? setTimeout(() => { if (!sound && RELAY.stop) relayStatus('No audio is reaching the relay. Streams from other sites usually need to allow cross-origin access (CORS); try a different stream or the tab-audio source.', true); }, 8000) : 0;
+  RELAY.stop = () => {
+    clearTimeout(watch); try { proc.disconnect(); srcNode.disconnect(); } catch (e) { }
+    if (stream) stream.getTracks().forEach(t => t.stop()); if (el) { el.pause(); el.removeAttribute('src'); }
+    RELAY.stop = null; $('btnRelay').textContent = 'Relay'; led('Car', false); $('vu').style.width = '0';
+    relayStatus('Relay stopped.' + (st.relayed ? ' ' + st.relayed + ' alert' + (st.relayed === 1 ? '' : 's') + ' relayed.' : '')); if (!TX && !alertActive) lcdIdleScreen();
+  };
+  $('btnRelay').textContent = 'Stop relay'; lcd('RELAY  listening', kind === 'mic' ? 'Microphone' : kind === 'tab' ? 'Browser tab audio' : $('relayUrl').value.trim(), false);
+  relayStatus('Listening for an alert' + (kind === 'mic' ? ' on the microphone' : kind === 'tab' ? ' in the shared tab' : ' on the stream') + '. The relay sends it as soon as its EOM arrives.');
+}
+function relayToggle() {
+  if (RELAY.stop) { RELAY.q.length = 0; RELAY.stop(); return; }
+  const src = $('relaySrc').value;
+  if (src === 'file') { if (!RELAY.file) { $('relayFile').click(); return; } cancelTx(); relayFromFile(RELAY.file); return; }
+  relayLive(src).catch(e => relayStatus(e.message || String(e), true));
+}
+function relaySrcChanged() { const v = $('relaySrc').value; $('relayFileWrap').hidden = v !== 'file'; $('relayUrlWrap').hidden = v !== 'url'; }
+
 /* --------------------------------------------------------------- recording */
 let REC = null;                                    // {rec, chunks, dest, t0, timer, mime}
 const REC_MIME_AV = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
@@ -2716,7 +2934,7 @@ function startRecording() {
   if (!window.MediaRecorder || !cg.cv.captureStream) { recStatus('This browser cannot record the canvas. Use a current Chrome, Edge or Safari.', true); return; }
   const withAudio = !!S.recAudio; let dest = null;
   const stream = cg.cv.captureStream(30);
-  if (withAudio) { try { dest = getCtx().createMediaStreamDestination(); dest.stream.getAudioTracks().forEach(t => stream.addTrack(t)); } catch (e) { dest = null; } }
+  if (withAudio) { try { dest = getCtx().createMediaStreamDestination(); dest.stream.getAudioTracks().forEach(t => stream.addTrack(t)); if (bgAudio) bgAudio.gain.connect(dest); } catch (e) { dest = null; } }
   const mime = (dest ? REC_MIME_AV : REC_MIME_V).find(m => MediaRecorder.isTypeSupported(m)) || '';
   let rec;
   try { rec = new MediaRecorder(stream, Object.assign(mime ? { mimeType: mime } : {}, { videoBitsPerSecond: Math.round(Math.min(20e6, Math.max(4e6, cg.cfg.w * cg.cfg.h * 30 * 0.12))), audioBitsPerSecond: 192000 })); }
@@ -2728,12 +2946,13 @@ function startRecording() {
   REC = { rec, chunks, dest, t0: Date.now(), mime: rec.mimeType || mime, hasAudio: !!dest };
   REC.timer = setInterval(recTick, 250); recTick();
   const btn = $('btnRec'); btn.classList.add('on'); $('chkRecAudio').disabled = true;
-  recStatus((/mp4/.test(REC.mime) ? 'Recording MP4' : 'Recording WebM (this browser has no MP4 recorder)') + (dest ? ', with ENDEC audio' : ', video only') + ' at ' + cg.cfg.w + ' × ' + cg.cfg.h + '.');
+  recStatus((/mp4/.test(REC.mime) ? 'Recording MP4' : 'Recording WebM (this browser has no MP4 recorder)') + (dest ? ', with audio' : ', video only') + ' at ' + cg.cfg.w + ' × ' + cg.cfg.h + '.');
 }
 function recTick() { const s = Math.floor((Date.now() - REC.t0) / 1000); $('btnRec').textContent = '■ Stop  ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
 function stopRecording() { if (!REC) return; clearInterval(REC.timer); try { REC.rec.state !== 'inactive' && REC.rec.stop(); } catch (e) { } }
 function finishRecording(chunks, mime) {
-  const wasAudio = REC && REC.hasAudio; REC = null;
+  try { if (REC && REC.dest && bgAudio) bgAudio.gain.disconnect(REC.dest); } catch (e) { }
+  REC = null;
   $('btnRec').classList.remove('on'); $('btnRec').textContent = '● Record'; $('chkRecAudio').disabled = false;
   if (!chunks.length) { recStatus('Nothing was recorded.', true); return; }
   const mp4 = /mp4/.test(mime), blob = new Blob(chunks, { type: (mime || (mp4 ? 'video/mp4' : 'video/webm')).split(';')[0] });
@@ -2795,7 +3014,7 @@ const BIND = [  // [element, key, kind]  kind: s=string n=number c=checkbox
   ['repSel', 'repeats', 'n'], ['barY', 'barY', 'n'], ['barH', 'barH', 'n'], ['chkShadow', 'shadow', 'c'], ['chkIdle', 'idle', 'c'], ['chkSmooth', 'smooth', 'c'],
   ['preset', 'preset', 's'], ['org', 'org', 's'], ['evt', 'evt', 's'], ['dur', 'dur', 's'], ['sid', 'sid', 's'], ['issueMode', 'issueMode', 's'], ['issueFixed', 'issueFixed', 's'],
   ['toneSel', 'toneSel', 's'], ['toneSec', 'toneSec', 'n'], ['msgSec', 'msgSec', 'n'], ['noiseSel', 'noise', 's'], ['corruptSel', 'corrupt', 's'], ['vol', 'vol', 'n'],
-  ['chkRT', 'rt', 'c'], ['chkSound', 'sound', 'c'], ['chkTTS', 'tts', 'c'], ['chkEOM', 'eom', 'c'], ['baud', 'baud', 's'], ['chkSerIn', 'serIn', 'c'], ['chkSerOut', 'serOut', 'c'], ['crawlText', 'crawlText', 's'], ['chkRecAudio', 'recAudio', 'c']
+  ['chkRT', 'rt', 'c'], ['chkSound', 'sound', 'c'], ['chkTTS', 'tts', 'c'], ['chkEOM', 'eom', 'c'], ['baud', 'baud', 's'], ['chkSerIn', 'serIn', 'c'], ['chkSerOut', 'serOut', 'c'], ['crawlText', 'crawlText', 's'], ['chkRecAudio', 'recAudio', 'c'], ['bgVol', 'bgVol', 'n'], ['relayOwnId', 'relayOwnId', 'c']
 ];
 function endecNote() {
   const p = ENDEC_PROFILES[S.endec], g = p.signature;
@@ -2817,6 +3036,7 @@ function bindControls() {
       if (key === 'canadian') { fillPickers(); renderChips(); }
       if (key === 'bgCustom') { S.bg = 'custom'; $('bgSel').value = 'custom'; }
       if (key === 'bgKind') { pushBackground(); }
+      if (key === 'bgVol') applyProgramMute();
       if (key === 'endec') endecNote();
       if (key === 'dur') S.dur = el.value.replace(/\D/g, '').slice(0, 4);
       if (key === 'vol' && TX && TX.src) { /* volume applies to the next send */ }
@@ -2848,13 +3068,15 @@ function wireUI() {
   $('btnAddRaw').addEventListener('click', addRaw); $('rawLoc').addEventListener('keydown', e => { if (e.key === 'Enter') addRaw(); });
   $('chips').addEventListener('click', e => { const i = e.target.dataset.rm; if (i != null) { S.locs.splice(+i, 1); save(); renderChips(); refreshHeader(); } });
   $('btnCopyHdr').addEventListener('click', () => { navigator.clipboard && navigator.clipboard.writeText($('hdrOut').textContent); $('btnCopyHdr').textContent = 'Copied'; setTimeout(() => $('btnCopyHdr').textContent = 'Copy', 1200); });
-  $('btnSend').addEventListener('click', sendAlert); $('btnCancel').addEventListener('click', () => { cancelTx(); });
+  $('btnSend').addEventListener('click', sendAlert); $('btnCancel').addEventListener('click', () => { RELAY.q.length = 0; cancelTx(); });
   $('btnWav').addEventListener('click', downloadWav); $('btnEomOnly').addEventListener('click', sendEomOnly);
   $('btnShowLast').addEventListener('click', () => LAST ? showEntry(LAST) : lcd('No alert yet', 'Send or decode one first'));
-  $('btnStop').addEventListener('click', () => { cgCmd({ cmd: 'stop' }); });
+  $('btnStop').addEventListener('click', () => { MUTE.alert = false; applyProgramMute(); cgCmd({ cmd: 'stop' }); });
   $('btnClearQ').addEventListener('click', () => cgCmd({ cmd: 'clearq' }));
   $('btnBoot').addEventListener('click', () => cgCmd({ cmd: 'banner', lines: bannerLines(), sec: 3 }));
   $('btnRec').addEventListener('click', toggleRecording);
+  $('btnRelay').addEventListener('click', relayToggle); $('relaySrc').addEventListener('change', relaySrcChanged); relaySrcChanged();
+  $('relayFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; RELAY.file = f; $('relayFileName').textContent = f.name; relayToggle(); });
   $('btnCrawl').addEventListener('click', () => handleLine($('crawlText').value, 'KEYBOARD'));
   $('crawlText').addEventListener('keydown', e => { if (e.key === 'Enter') handleLine($('crawlText').value, 'KEYBOARD'); });
   $('btnDecode').addEventListener('click', () => { decodeText($('decIn').value); });
@@ -2916,7 +3138,7 @@ async function main() {
     const on = s.state !== 'idle';
     $('hud').classList.toggle('on', on);
     $('hudText').textContent = s.state === 'idle' ? 'Idle' : 'On air' + (s.label ? ' · ' + s.label : '') + (s.holding ? ' · holding' : ' · pass ' + (s.copy || 1) + '/' + (s.repeats || '∞')) + (s.queued ? ' · ' + s.queued + ' queued' : '');
-    if (s.state === 'idle' && alertActive) { alertActive = false; led('Alert', false); if (!TX) lcdIdleScreen(); }
+    if (s.state === 'idle' && alertActive) { alertActive = false; MUTE.alert = false; applyProgramMute(); led('Alert', false); if (!TX) lcdIdleScreen(); }
   };
   pushConfig(); pushBackground(); refreshHeader(); lcdIdleScreen();
   cg.showBanner(bannerLines(), 2.6);
