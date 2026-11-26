@@ -2299,6 +2299,7 @@ class CGEngine {
       }
     }
     this.draw(now);
+    if (this.onDrawn) this.onDrawn(dt);                 // lets the recorder grab exactly this finished frame
   }
   drawBackground() {
     const c = this.cfg, ctx = this.ctx, W = c.w, H = c.h, el = this.bgEl;
@@ -2933,20 +2934,29 @@ function recStatus(msg, bad) { const el = $('recInfo'); el.textContent = msg; el
 function startRecording() {
   if (!window.MediaRecorder || !cg.cv.captureStream) { recStatus('This browser cannot record the canvas. Use a current Chrome, Edge or Safari.', true); return; }
   const withAudio = !!S.recAudio; let dest = null;
-  const stream = cg.cv.captureStream(30);
-  if (withAudio) { try { dest = getCtx().createMediaStreamDestination(); dest.stream.getAudioTracks().forEach(t => stream.addTrack(t)); if (bgAudio) bgAudio.gain.connect(dest); } catch (e) { dest = null; } }
+  // frames are submitted by hand, one per finished render, at 60 per second: no 30 fps cap, no beat between the draw loop and the sampler
+  const stream = cg.cv.captureStream(0), vtrack = stream.getVideoTracks()[0], manual = !!(vtrack && vtrack.requestFrame);
+  if (!manual) { stream.getTracks().forEach(t => t.stop()); }
+  const stream2 = manual ? stream : cg.cv.captureStream(60);
+  if (withAudio) { try { dest = getCtx().createMediaStreamDestination(); dest.stream.getAudioTracks().forEach(t => stream2.addTrack(t)); if (bgAudio) bgAudio.gain.connect(dest); } catch (e) { dest = null; } }
   const mime = (dest ? REC_MIME_AV : REC_MIME_V).find(m => MediaRecorder.isTypeSupported(m)) || '';
   let rec;
-  try { rec = new MediaRecorder(stream, Object.assign(mime ? { mimeType: mime } : {}, { videoBitsPerSecond: Math.round(Math.min(20e6, Math.max(4e6, cg.cfg.w * cg.cfg.h * 30 * 0.12))), audioBitsPerSecond: 192000 })); }
+  try { rec = new MediaRecorder(stream2, Object.assign(mime ? { mimeType: mime } : {}, { videoBitsPerSecond: Math.round(Math.min(20e6, Math.max(4e6, cg.cfg.w * cg.cfg.h * 60 * 0.1))), audioBitsPerSecond: 192000 })); }
   catch (e) { recStatus('Recording could not start: ' + (e.message || e), true); return; }
   const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   rec.onstop = () => finishRecording(chunks, rec.mimeType || mime);
   rec.onerror = e => recStatus('Recording error: ' + ((e.error && e.error.message) || 'unknown'), true);
   rec.start(1000);
-  REC = { rec, chunks, dest, t0: Date.now(), mime: rec.mimeType || mime, hasAudio: !!dest };
+  REC = { rec, chunks, dest, t0: Date.now(), mime: rec.mimeType || mime, hasAudio: !!dest, track: manual ? vtrack : null, acc: 0 };
+  if (REC.track) { try { REC.track.requestFrame(); } catch (e) { } }
   REC.timer = setInterval(recTick, 250); recTick();
   const btn = $('btnRec'); btn.classList.add('on'); $('chkRecAudio').disabled = true;
   recStatus((/mp4/.test(REC.mime) ? 'Recording MP4' : 'Recording WebM (this browser has no MP4 recorder)') + (dest ? ', with audio' : ', video only') + ' at ' + cg.cfg.w + ' × ' + cg.cfg.h + '.');
+}
+/** called after every rendered frame: hand the canvas to the encoder at a steady 60 fps whatever the display refresh rate is */
+function recFrame(dt) {
+  if (!REC || !REC.track) return; const step = 1 / 60; REC.acc += dt;
+  if (REC.acc >= step - 0.002) { REC.acc -= step; if (REC.acc > step) REC.acc = 0; try { REC.track.requestFrame(); } catch (e) { } }
 }
 function recTick() { const s = Math.floor((Date.now() - REC.t0) / 1000); $('btnRec').textContent = '■ Stop  ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
 function stopRecording() { if (!REC) return; clearInterval(REC.timer); try { REC.rec.state !== 'inactive' && REC.rec.stop(); } catch (e) { } }
@@ -3126,7 +3136,7 @@ const bannerLines = () => ['CHYRON  Rev 03.15S', 'CODI  EAS crawl ready'];
 
 async function main() {
   try { await loadPayload(); } catch (e) { $('boot').className = 'boot err'; $('boot').textContent = 'Could not start: ' + (e.message || e); return; }
-  cg = new CGEngine($('cg'));
+  cg = new CGEngine($('cg')); cg.onDrawn = recFrame;
   if (OUT) {
     document.body.classList.add('out'); document.title = 'CODI EAS CG output';
     window.addEventListener('message', e => incoming(e.data, e)); if (bc) bc.onmessage = e => incoming(e.data);
