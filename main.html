@@ -138,6 +138,8 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
 
 .checks.sub{margin:0 0 8px}.relayrow{align-items:center}.relayrow .note{margin:0;flex:1;min-width:180px}
 
+.ovr{margin:0 0 10px}.ovr .chk{margin-bottom:4px}
+
 </style>
 </head>
 <body>
@@ -280,6 +282,11 @@ button.rec.on{background:linear-gradient(#e24a3f,#b52a21);border-color:#7d1b15;c
           <button id="btnDecShow" type="button" title="Plays the alert audio and shows the crawl">Play alert on CG</button>
         </div>
         <div id="decOut" class="decout"></div>
+
+        <div class="ovr">
+          <label class="chk"><input id="chkOverride" type="checkbox"> Override the scroll text</label>
+          <textarea id="overrideText" rows="2" spellcheck="false" placeholder="Text to scroll instead of the generated wording. It applies to every alert the CG shows."></textarea>
+        </div>
 
         <fieldset>
           <legend>Audio input</legend>
@@ -2377,7 +2384,7 @@ const DEFAULTS = {
   barY: 0.11863, barH: 0.09231, shadow: true, idle: false, smooth: true,
   preset: 'tpl', org: 'WXR', evt: 'SVR', locs: ['050015'], dur: '0051', sid: 'TWC/NWS ', issueMode: 'now', issueFixed: '',
   endec: 'SAGE_ANALOG_1822', toneSel: 'eas', toneSec: 8, msgSec: 4, noise: '0', corrupt: '', vol: 35, rt: true, sound: true, tts: false, eom: true,
-  baud: '9600', serIn: true, serOut: true, recAudio: true, relayOwnId: true, bgVol: 100, crawlText: 'THIS IS A TEST OF THE CODI CHARACTER GENERATOR. NO ACTION IS REQUIRED.'
+  baud: '9600', serIn: true, serOut: true, recAudio: true, relayOwnId: true, overrideOn: false, overrideText: '', bgVol: 100, crawlText: 'THIS IS A TEST OF THE CODI CHARACTER GENERATOR. NO ACTION IS REQUIRED.'
 };
 const CG_KEYS = ['res', 'bg', 'bgCustom', 'bgKind', 'bgFit', 'bar', 'font', 'scale', 'speed', 'hold', 'repeats', 'barY', 'barH', 'shadow', 'idle', 'smooth'];
 const S = Object.assign({}, DEFAULTS);
@@ -2410,6 +2417,7 @@ function times(header) {
 const dayStr = d => { const z = I.getZonedParts(d); return I.MONTH_ABBR[z.monthIndex] + ' ' + z.day + ', ' + z.year; };
 const clock = d => I.formatTime12(d, { padHour: false });
 function alertText(header) {
+  if (S.overrideOn && S.overrideText.trim()) return S.overrideText.trim().replace(/\s+/g, ' ');   // typed text replaces the generated wording
   return E2T.E2T(header, S.textMode === 'DEFAULT' ? null : S.textMode, S.canadian, S.tz || null);
 }
 function eventName(header) { try { const p = I.parseHeaderCore(header); return strip(I.lookupSame('EVENTS', p.eventCode, S.canadian) || p.eventCode); } catch (e) { return '?'; } }
@@ -3024,7 +3032,7 @@ const BIND = [  // [element, key, kind]  kind: s=string n=number c=checkbox
   ['repSel', 'repeats', 'n'], ['barY', 'barY', 'n'], ['barH', 'barH', 'n'], ['chkShadow', 'shadow', 'c'], ['chkIdle', 'idle', 'c'], ['chkSmooth', 'smooth', 'c'],
   ['preset', 'preset', 's'], ['org', 'org', 's'], ['evt', 'evt', 's'], ['dur', 'dur', 's'], ['sid', 'sid', 's'], ['issueMode', 'issueMode', 's'], ['issueFixed', 'issueFixed', 's'],
   ['toneSel', 'toneSel', 's'], ['toneSec', 'toneSec', 'n'], ['msgSec', 'msgSec', 'n'], ['noiseSel', 'noise', 's'], ['corruptSel', 'corrupt', 's'], ['vol', 'vol', 'n'],
-  ['chkRT', 'rt', 'c'], ['chkSound', 'sound', 'c'], ['chkTTS', 'tts', 'c'], ['chkEOM', 'eom', 'c'], ['baud', 'baud', 's'], ['chkSerIn', 'serIn', 'c'], ['chkSerOut', 'serOut', 'c'], ['crawlText', 'crawlText', 's'], ['chkRecAudio', 'recAudio', 'c'], ['bgVol', 'bgVol', 'n'], ['relayOwnId', 'relayOwnId', 'c']
+  ['chkRT', 'rt', 'c'], ['chkSound', 'sound', 'c'], ['chkTTS', 'tts', 'c'], ['chkEOM', 'eom', 'c'], ['baud', 'baud', 's'], ['chkSerIn', 'serIn', 'c'], ['chkSerOut', 'serOut', 'c'], ['crawlText', 'crawlText', 's'], ['chkRecAudio', 'recAudio', 'c'], ['chkOverride', 'overrideOn', 'c'], ['overrideText', 'overrideText', 's'], ['bgVol', 'bgVol', 'n'], ['relayOwnId', 'relayOwnId', 'c']
 ];
 function endecNote() {
   const p = ENDEC_PROFILES[S.endec], g = p.signature;
@@ -3052,7 +3060,7 @@ function bindControls() {
       if (key === 'vol' && TX && TX.src) { /* volume applies to the next send */ }
       save(); outputs();
       if (CG_KEYS.includes(key)) pushConfig();
-      if (['textMode', 'tz', 'canadian', 'org', 'evt', 'dur', 'sid', 'issueMode', 'issueFixed'].includes(key)) refreshHeader();
+      if (['textMode', 'tz', 'canadian', 'org', 'evt', 'dur', 'sid', 'issueMode', 'issueFixed', 'overrideOn', 'overrideText'].includes(key)) refreshHeader();
     });
   }
 }
